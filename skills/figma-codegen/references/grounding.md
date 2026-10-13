@@ -164,8 +164,17 @@ the obvious ones. These are ordered by how easily they're silently dropped.
   writing a paint back ignores it, so a gradient's direction is changed through
   `gradientTransform`, never by editing `cssAngle`.
 - **Image fit.** An `IMAGE` (or `VIDEO`) fill carries `scaleMode` — the object-fit equivalent:
-  `FILL` → `object-cover`, `FIT` → `object-contain`, `CROP` → `cover` + a position, `TILE` →
-  `background-repeat: repeat`. Apply it to the exported image so it isn't stretched or letterboxed.
+  `FILL` → `object-cover`, `FIT` → `object-contain`, `TILE` → `background-repeat: repeat`. Apply it
+  to the exported image so it isn't stretched or letterboxed.
+- **Image crop.** `CROP` is not a cover. It carries `imageTransform` `[[a, b, c], [d, e, f]]`: the
+  layer's 0–1 box mapped into the image's 0–1 space (`u = a·x + c`, `v = e·y + f`). A crop can zoom
+  past cover, change the image's proportions, or leave part of the layer empty, and the identity
+  matrix is a stretch. Reproduce it with the original bytes (`save_image_fills`) inside an
+  `overflow: hidden` box: the image `position: absolute` at `width: (100/a)%`, `height: (100/e)%`,
+  `left: (−c/a × 100)%`, `top: (−f/e × 100)%`, with `max-width: none`. Measured against Figma's own
+  render on four crops (zoomed in, zoomed out, offset, partly empty): 0.01–1.39% of pixels differ,
+  versus 88–99.9% for `object-fit: cover`. When `b` or `d` is non-zero the image was rotated inside
+  the crop: export the composited render (`get_screenshot`) instead.
 - **Pattern fills.** A `PATTERN` fill tiles a source node (`sourceNodeId`) across the element — it is
   **not** a flat colour. Export that tile with `get_screenshot` on `sourceNodeId`, then: for
   `tileType: RECTANGULAR`, use `background-image` + `background-repeat: repeat` with a

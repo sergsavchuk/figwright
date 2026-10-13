@@ -194,9 +194,16 @@ export const serializePaint = (paint: Paint, ownerSize: PaintOwnerSize | null): 
   // so exported images get the right fit instead of being stretched. filtersApplied
   // flags in-fill colour grading, which the original bytes (save_image_fills) do NOT include — the
   // signal to export the composited render instead.
-  const scaleMode = 'scaleMode' in paint ? (paint as { scaleMode?: string }).scaleMode : undefined;
-  const filtered =
-    'filters' in paint && hasImageAdjustments((paint as { filters?: unknown }).filters);
+  const media = paint as { scaleMode?: string; filters?: unknown; imageTransform?: Transform };
+  const scaleMode = media.scaleMode;
+  const filtered = 'filters' in paint && hasImageAdjustments(media.filters);
+  // A CROP fill is scaleMode plus a region: imageTransform says which part of the image the layer
+  // shows (and where, since a crop may also leave the layer partly empty). Without it a CROP reads
+  // as a centred cover. The matrix only means something in CROP, so the other modes stay lean.
+  const imageTransform =
+    scaleMode === 'CROP' && Array.isArray(media.imageTransform)
+      ? media.imageTransform.map(row => row.slice())
+      : undefined;
   return {
     type: paint.type,
     visible,
@@ -204,6 +211,7 @@ export const serializePaint = (paint: Paint, ownerSize: PaintOwnerSize | null): 
     ...(scaleMode === undefined
       ? {}
       : { scaleMode: scaleMode as 'FILL' | 'FIT' | 'CROP' | 'TILE' }),
+    ...(imageTransform === undefined ? {} : { imageTransform }),
     ...(filtered ? { filtersApplied: true } : {}),
   };
 };

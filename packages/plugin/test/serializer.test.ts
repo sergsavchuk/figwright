@@ -344,6 +344,31 @@ describe('serializeFlat', () => {
     expect(out.fills).toEqual([{ type: 'IMAGE', visible: true, opacity: 1, scaleMode: 'FILL' }]);
   });
 
+  it('carries imageTransform on a CROP fill only', () => {
+    // CROP is scaleMode plus a region; without the matrix it reads as a centred cover. Other modes
+    // don't use the matrix, so it is not carried there.
+    const crop = [
+      [0.5, 0, 0.25],
+      [0, 0.6, 0.1],
+    ];
+    const identity = [
+      [1, 0, 0],
+      [0, 1, 0],
+    ];
+    const out = serializeFlatSync(
+      fake({
+        fills: [
+          { type: 'IMAGE', visible: true, opacity: 1, scaleMode: 'CROP', imageTransform: crop },
+          { type: 'IMAGE', visible: true, opacity: 1, scaleMode: 'FILL', imageTransform: identity },
+        ],
+      }),
+    );
+    expect(out.fills).toEqual([
+      { type: 'IMAGE', visible: true, opacity: 1, scaleMode: 'CROP', imageTransform: crop },
+      { type: 'IMAGE', visible: true, opacity: 1, scaleMode: 'FILL' },
+    ]);
+  });
+
   it('flags an IMAGE fill with non-zero adjustments; untouched filters stay clean', () => {
     // Adjusted: the original bytes don't carry the grading → export the composited render instead.
     const graded = serializeFlatSync(

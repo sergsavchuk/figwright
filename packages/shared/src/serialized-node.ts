@@ -151,6 +151,13 @@ const OtherPaintSchema = z.object({
   opacity: z.number(),
   scaleMode: z.enum(['FILL', 'FIT', 'CROP', 'TILE']).optional(),
   /**
+   * CROP only: the Plugin API's 2×3 affine matrix (rows of 3) mapping the layer's normalized box
+   * (0–1 on each axis) into the image's normalized space — `u = a·x + c`, `v = e·y + f` — i.e.
+   * which region of the image the layer shows. Without it a CROP fill is indistinguishable from a
+   * centred cover, and the identity matrix is a stretch, not a cover.
+   */
+  imageTransform: z.array(z.array(z.number())).optional(),
+  /**
    * True when the fill carries non-zero image adjustments (exposure / contrast / saturation /
    * temperature / tint / highlights / shadows). The original bytes (save_image_fills) do NOT
    * include them, so an adjusted image must ship as the composited render (get_screenshot), or the

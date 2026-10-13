@@ -147,6 +147,28 @@ describe('dedupeStyles', () => {
     expect(globalVars.styles[nodes[1]!.fill!]).toEqual([{ type: 'IMAGE', scaleMode: 'FILL' }]);
   });
 
+  it("carries a CROP fill's imageTransform into the simplified paint", () => {
+    // scaleMode alone reads every CROP as a centred cover; the region has to reach globalVars,
+    // which is what the LLM reads.
+    const crop = [
+      [0.5, 0, 0.25],
+      [0, 0.6, 0.1],
+    ];
+    const { nodes, globalVars } = dedupeStyles([
+      {
+        id: 'a',
+        name: 'a',
+        type: 'RECTANGLE',
+        fills: [
+          { type: 'IMAGE', visible: true, opacity: 1, scaleMode: 'CROP', imageTransform: crop },
+        ],
+      },
+    ]);
+    expect(globalVars.styles[nodes[0]!.fill!]).toEqual([
+      { type: 'IMAGE', scaleMode: 'CROP', imageTransform: crop },
+    ]);
+  });
+
   it('carries the tiling geometry on a PATTERN fill (source node + repeat)', () => {
     const { nodes, globalVars } = dedupeStyles([
       {

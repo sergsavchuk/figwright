@@ -15,7 +15,7 @@ pixel asset grounding can't encode.
   asset to one file (named by hash) and handles a node carrying several image fills. Reach for
   `save_screenshots` / `get_screenshot` `PNG` at **`scale: 2`** (the tool defaults to 1, which
   rasterizes at display size and ships blurry on dense screens) **only** when you specifically need
-  the **composited** look — a `CROP` region, a mask, a gradient overlay you can't reproduce in CSS, or Figma image
+  the **composited** look — a rotated `CROP` (an `imageTransform` with a non-zero `b` or `d`; see grounding.md "Image crop"), a mask, a gradient overlay you can't reproduce in CSS, or Figma image
   adjustments (exposure / contrast / tint tuned on the fill itself; the original bytes don't carry
   them, so a colour-graded photo shipped from the original looks wrong). Grounding flags that last
   case for you: an `IMAGE` fill with **`filtersApplied: true`** has in-fill adjustments the original

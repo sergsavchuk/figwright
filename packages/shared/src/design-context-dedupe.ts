@@ -112,6 +112,8 @@ export interface SimplifiedPaint {
   cssAngle?: number;
   /** IMAGE/VIDEO object-fit equivalent: FILL=cover, FIT=contain, CROP, TILE=repeat. */
   scaleMode?: string;
+  /** CROP: layer box (0–1) → image space (0–1) matrix — which region of the image shows. */
+  imageTransform?: number[][];
   /** In-fill colour grading (exposure/contrast/…): export the composited render, not the original. */
   filtersApplied?: true;
   /** PATTERN tiling: the source tile node + how it repeats. See grounding.md "Pattern fills". */
@@ -144,6 +146,9 @@ export const simplifyPaint = (paint: SerializedPaint): SimplifiedPaint => {
     if (paint.cssAngle !== undefined) out.cssAngle = paint.cssAngle;
   } else if ('scaleMode' in paint && paint.scaleMode !== undefined) {
     out.scaleMode = paint.scaleMode;
+    // The region scaleMode alone can't say — without it every CROP reads as a centred cover.
+    if ('imageTransform' in paint && paint.imageTransform !== undefined)
+      out.imageTransform = paint.imageTransform;
     if ('filtersApplied' in paint && paint.filtersApplied === true) out.filtersApplied = true;
   } else if (paint.type === 'PATTERN') {
     // The source tile + its repeat geometry — without it a pattern fill is just `{ type: 'PATTERN' }`
