@@ -114,6 +114,11 @@ export interface SimplifiedPaint {
   scaleMode?: string;
   /** CROP: layer box (0–1) → image space (0–1) matrix — which region of the image shows. */
   imageTransform?: number[][];
+  /**
+   * IMAGE / VIDEO / PATTERN / SHADER layer opacity (SOLID and gradients fold it into their
+   * colours).
+   */
+  opacity?: number;
   /** In-fill colour grading (exposure/contrast/…): export the composited render, not the original. */
   filtersApplied?: true;
   /** PATTERN tiling: the source tile node + how it repeats. See grounding.md "Pattern fills". */
@@ -134,9 +139,11 @@ export const simplifyPaint = (paint: SerializedPaint): SimplifiedPaint => {
   if (paint.type === 'SOLID') {
     out.color = toHex(paint.color, paint.opacity);
   } else if ('gradientStops' in paint) {
+    // The paint's own opacity multiplies every stop, the way SOLID folds it into its hex — dropped,
+    // a half-transparent gradient overlay ships opaque.
     out.gradientStops = paint.gradientStops.map((s: SerializedColorStop) => ({
       position: s.position,
-      color: toHex(s.color, s.color.a),
+      color: toHex(s.color, s.color.a * paint.opacity),
     }));
     // Carry the axis matrix too — without it the gradient direction/angle is lost and the LLM can
     // only guess (or flatten the gradient to a solid colour, the classic miss).
@@ -165,6 +172,10 @@ export const simplifyPaint = (paint: SerializedPaint): SimplifiedPaint => {
       out.shaderProperties = simplifyShaderProperties(paint.shaderProperties);
     }
   }
+  // An image, pattern or shader has no colour to fold its opacity into, so it rides as a field —
+  // without it a faded photo or texture ships at full strength. 1 is the default and stays implicit.
+  if (paint.type !== 'SOLID' && !('gradientStops' in paint) && paint.opacity !== 1)
+    out.opacity = paint.opacity;
   if (paint.visible === false) out.visible = false;
   return out;
 };

@@ -151,7 +151,8 @@ the obvious ones. These are ordered by how easily they're silently dropped.
 - **Gradient fills.** A fill of type `GRADIENT_LINEAR` / `GRADIENT_RADIAL` / `GRADIENT_ANGULAR` /
   `GRADIENT_DIAMOND` carries `gradientStops` (`{ position 0–1, color hex }`) and `gradientTransform`
   (the 2×3 axis matrix). **Emit a real CSS gradient — don't flatten it to a solid colour.** Map the
-  stops directly (`linear-gradient(<angle>, #A 0%, #B 100%)`, `radial-gradient(...)`). A
+  stops directly (`linear-gradient(<angle>, #A 0%, #B 100%)`, `radial-gradient(...)`); the paint's
+  own opacity is already folded into each stop's alpha, as it is into a `SOLID` hex. A
   `GRADIENT_LINEAR` also carries **`cssAngle`** — the ready-to-emit degrees for
   `linear-gradient(<cssAngle>deg, …)`. **Use it verbatim; never re-derive the angle from
   `gradientTransform`.** The angle is not a property of the matrix alone: Figma positions the ramp in
@@ -166,6 +167,10 @@ the obvious ones. These are ordered by how easily they're silently dropped.
 - **Image fit.** An `IMAGE` (or `VIDEO`) fill carries `scaleMode` — the object-fit equivalent:
   `FILL` → `object-cover`, `FIT` → `object-contain`, `TILE` → `background-repeat: repeat`. Apply it
   to the exported image so it isn't stretched or letterboxed.
+  An image, video, pattern or shader paint that isn't fully opaque also carries `opacity` (0–1, the
+  paint's own, separate from the node's): apply it to that layer alone (`opacity` on the `<img>`, or
+  on the pseudo-element / layer that carries it) — dropped, a faded photo or texture ships at full
+  strength.
 - **Image crop.** `CROP` is not a cover. It carries `imageTransform` `[[a, b, c], [d, e, f]]`: the
   layer's 0–1 box mapped into the image's 0–1 space (`u = a·x + c`, `v = e·y + f`). A crop can zoom
   past cover, change the image's proportions, or leave part of the layer empty, and the identity
