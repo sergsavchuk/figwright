@@ -121,6 +121,60 @@ describe('dedupeStyles', () => {
     expect(globalVars.styles[nodes[0]!.fill!]).toEqual([{ type: 'IMAGE', scaleMode: 'FILL' }]);
   });
 
+  it("folds a gradient paint's opacity into every stop's alpha", () => {
+    const { nodes, globalVars } = dedupeStyles([
+      {
+        id: 'a',
+        name: 'a',
+        type: 'RECTANGLE',
+        fills: [
+          {
+            type: 'GRADIENT_LINEAR',
+            visible: true,
+            opacity: 0.5,
+            gradientStops: [
+              { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+              { position: 1, color: { r: 0, g: 0, b: 1, a: 0.5 } },
+            ],
+            gradientTransform: [
+              [1, 0, 0],
+              [0, 1, 0],
+            ],
+          },
+        ],
+      },
+    ]);
+    expect(globalVars.styles[nodes[0]!.fill!]).toMatchObject([
+      {
+        gradientStops: [
+          { position: 0, color: '#FF000080' },
+          { position: 1, color: '#0000FF40' },
+        ],
+      },
+    ]);
+  });
+
+  it('carries opacity < 1 on an IMAGE fill, and keeps it out of fully opaque ones', () => {
+    const { nodes, globalVars } = dedupeStyles([
+      {
+        id: 'a',
+        name: 'a',
+        type: 'RECTANGLE',
+        fills: [{ type: 'IMAGE', visible: true, opacity: 0.4, scaleMode: 'FILL' }],
+      },
+      {
+        id: 'b',
+        name: 'b',
+        type: 'RECTANGLE',
+        fills: [{ type: 'IMAGE', visible: true, opacity: 1, scaleMode: 'FILL' }],
+      },
+    ]);
+    expect(globalVars.styles[nodes[0]!.fill!]).toEqual([
+      { type: 'IMAGE', scaleMode: 'FILL', opacity: 0.4 },
+    ]);
+    expect(globalVars.styles[nodes[1]!.fill!]).toEqual([{ type: 'IMAGE', scaleMode: 'FILL' }]);
+  });
+
   it('carries filtersApplied on an IMAGE fill (the export-the-composited-render signal)', () => {
     // The signal the LLM actually reads lives in globalVars (the simplified paint), not the raw
     // fill — so an in-fill colour grade must survive simplifyPaint, or codegen ships the original
